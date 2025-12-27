@@ -1,4 +1,4 @@
-<b>DDL - Data Definition Language (Linguagem de Definição de Dados)</b>
+<b>DDL - Data Definition Language (Linguagem de Definição de Dados).</b>
 <p></p>
 A DDL é responsável pela definição da estrutura lógica dos dados do banco. Por meio dela, o usuário cria, altera ou remove objetos do banco, como tabelas, índices e esquemas.
 <p></p>
