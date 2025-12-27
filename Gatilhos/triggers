@@ -1,1 +1,103 @@
+/*Criação das tabelas e seus relacionamentos*/
 
+create table cliente (
+login char(8) not null,
+senha char(8) not null,
+nome char(40) not null,
+endereco char(60) not null,
+qtd_obras_vendidas int not null,
+qtd_obras_compradas int not null,
+primary key (login)
+)
+
+create table obras_literarias (
+codobra int not null,
+nome char(40) not null,
+editora char(40) null,
+preco numeric(6,2) not null,
+tipo int not null,
+login_vendedor char(8) not null,
+data date not null,
+primary key (codobra),
+foreign key (login_vendedor) references cliente
+)
+
+create index ixobras_clientev on
+obras_literarias(login_vendedor)
+
+create table livro (
+codobra int not null,
+ISBN numeric(13,0) not null,
+primary key (codobra),
+foreign key (codobra) references obras_literarias
+)
+
+create table periodico (
+codobra int not null,
+numero int not null,
+volume int not null,
+primary key (codobra),
+foreign key (codobra) references obras_literarias
+)
+
+create table compra (
+codcompra int not null,
+data date not null,
+login_comprador char(8) not null,
+codobra int not null,
+primary key (codcompra),
+foreign key (login_comprador) references cliente,
+foreign key (codobra) references obras_literarias
+)
+
+create index ixcompra_clientec on compra(login_comprador)
+create unique index ix_compra_obra on compra(codobra)
+
+select * from cliente
+select * from obras_literarias
+select * from livro
+select * from periodico
+select * from compra
+---------------------------------------------------------------
+/*Criação do gatilho para realizar uma ação encadeada*/
+
+Create Trigger gatilho_inclusao_compra
+on compra for insert
+as
+begin
+    update cliente
+    set qtd_obras_compradas = qtd_obras_compradas + 1
+    where login in (
+        select i.login_comprador
+        from inserted i
+    );
+
+    update cliente
+    set qtd_obras_vendidas = qtd_obras_vendidas + 1
+    where login IN (
+        select o.login_vendedor
+        from obras_literarias o
+        inner join inserted i on o.codobra = i.codobra
+    );
+
+    if @@rowcount = 0
+        rollback transaction;
+end;
+
+/* Inclusão dos dados na tabela*/
+insert into cliente values ('carlos01','12345678','Carlos_Silva', 'Rua_Central', 0,0); 
+insert into cliente values ('maria02','abcdef12','Maria Souza','Republica',0,0);
+
+insert into obras_literarias values (1,'Memórias Póstumas de Brás Cubas','Editora Culturama',22.55,0,'maria02','08-11-2025');
+insert into obras_literarias values (2,'Torto Arado','Editora Todavia',55.18,0,'carlos01','08-11-2025');
+insert into obras_literarias values (3,'Um Defeito de Cor','Editora Record',77.06,0,'carlos01','08-11-2025');
+
+/*Evento que irá disparar o gatilho, ao inserir a compra, a tabela cliente atualiza os dados de quem comprou e vendeu*/
+insert into compra values (2,'08-11-2025','carlos01',1);
+
+select * from cliente
+--select * from obras_literarias
+--select * from compra
+
+select login, nome, qtd_obras_vendidas, qtd_obras_compradas
+from cliente;
