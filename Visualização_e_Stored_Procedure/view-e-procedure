@@ -1,1 +1,159 @@
 
+/*
+Criação uma visão (view) que para cada obra literária do tipo livro que já foi comprada é listado: o login do cliente vendedor,
+o nome do cliente vendedor, o código da obra, o nome da obra, a data em que foi colocada para vender e a data em que foi comprada.*/
+
+create table cliente (
+login char(8) not null,
+senha char(8) not null,
+nome char(40) not null,
+endereco char(60) not null,
+qtd_obras_vendidas int not null,
+qtd_obras_compradas int not null,
+primary key (login)
+)
+create table obras_literarias (
+codobra int not null,
+nome char(40) not null,
+editora char(40) null,
+preco numeric(6,2) not null,
+tipo int not null,
+login_vendedor char(8) not null,
+data date not null,
+primary key (codobra),
+foreign key (login_vendedor) references cliente
+)
+
+create index ixobras_clientev on
+obras_literarias(login_vendedor)
+create table livro (
+codobra int not null,
+ISBN numeric(13,0) not null,
+primary key (codobra),
+foreign key (codobra) references obras_literarias
+)
+
+create table periodico (
+codobra int not null,
+numero int not null,
+volume int not null,
+primary key (codobra),
+foreign key (codobra) references obras_literarias
+)
+
+create table compra (
+codcompra int not null,
+data date not null,
+login_comprador char(8) not null,
+codobra int not null,
+primary key (codcompra),
+foreign key (login_comprador) references cliente,
+foreign key (codobra) references obras_literarias
+)
+
+create index ixcompra_clientec on compra(login_comprador)
+create unique index ix_compra_obra on compra(codobra)
+
+
+select * from cliente
+select * from compra
+select * from livro
+select * from obras_literarias
+select * from periodico
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+INSERT INTO cliente (login, senha, nome, endereco, qtd_obras_vendidas, qtd_obras_compradas)
+VALUES ('cli00001', '12345678', 'Jeferson', 'Rua A, 123', 0, 0),
+       ('cli00002', '87654321', 'Maria', 'Rua B, 456', 0, 0);
+
+-- Inserindo obras literárias do tipo livro (tipo = 0)
+INSERT INTO obras_literarias (codobra, nome, editora, preco, tipo, login_vendedor, data)
+VALUES (1, 'Livro SQL Básico', 'Editora X', 50.00, 0, 'cli00001', '2025-12-01'),
+       (2, 'Livro Avançado', 'Editora Y', 80.00, 0, 'cli00002', '2025-12-05');
+
+-- Inserindo livros (detalhe de livro)
+INSERT INTO livro (codobra, ISBN)
+VALUES (1, 9781234567890),
+       (2, 9780987654321);
+
+-- Inserindo compras
+INSERT INTO compra (codcompra, data, login_comprador, codobra)
+VALUES (1, '2025-12-10', 'cli00002', 1),
+       (2, '2025-12-12', 'cli00001', 2);
+
+----------------------------------------------------------------------------------------------
+
+Create view livros_vendidos as
+select
+    o.login_vendedor,
+    c.nome as nome_vendedor,
+    o.codobra,
+    o.nome as nome_obra,
+    o.data as data_venda,
+    co.data as data_compra
+from obras_literarias o
+join cliente c 
+    on o.login_vendedor = c.login
+join compra co 
+    on o.codobra = co.codobra
+where o.tipo = 0;
+
+
+select * from livros_vendidos
+-----------------------------------------------------------------
+
+------------------------------------------------------------------
+
+/*Implementação de uma Stored Procedure (Procedimento Armazenado) para a transação de cadastro de periódicos. O procedimento
+retornar 1, se for bem-sucedido e 0, caso contrário.*/
+Create Procedure cadastro_periodico
+  @codobra int,
+  @nome char(40),
+  @editora char(40),
+  @preco numeric(6,2),
+  @login_vendedor char(8),
+  @data date,
+  @numero int,
+  @volume int
+as
+begin
+  begin transaction;
+  insert into obras_literarias (codobra, nome, editora, preco, tipo, login_vendedor, data)
+  values (@codobra, @nome, @editora, @preco, 1, @login_vendedor, @data);
+
+  if @@rowcount > 0
+  begin 
+      insert into periodico (codobra, numero, volume)
+      values (@codobra, @numero, @volume);
+      if @@rowcount > 0
+      begin 
+          commit transaction;
+          return 1
+      end
+      else
+      begin
+          rollback transaction
+          return 0
+      end
+  end
+  else
+  begin
+      rollback transaction
+      return 0
+  end
+end;
+go
+/* Exemplo de execução */
+DECLARE @ret INT;
+
+EXEC @ret = cadastro_periodico
+  @codobra = 101,
+  @nome = 'Revista_Diversidade',
+  @editora = 'ABCD_Editora',
+  @preco = 25,
+  @login_vendedor = 'cli00001',
+  @data = '2025-11-01',
+  @numero = 12,
+  @volume = 3;
+
+PRINT @ret;
