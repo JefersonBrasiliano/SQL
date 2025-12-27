@@ -1,1 +1,132 @@
+/* DML - SELECT, INSERT, UPDATE, DELETE */
 
+/* Criação de todas as tabelas da Base de Dados */
+---------------------------------------------------
+create table cliente (
+codigo int not null,
+nome char(20) not null,
+endereco char(30) null,
+cidade char(15) null,
+cep char(8) null, 
+uf char(2) null, 
+cnpj char(20) null,
+ie char(20) null,
+primary key (codigo)
+)
+
+create table vendedor (
+codigo int not null,
+nome char(20) not null,
+salario_fixo money not null,
+faixa_comissao char(1) not null,
+primary key(codigo)
+)
+
+create table produto (
+codigo int not null,
+unidade char(3) not null,
+descricao char(30) null,
+val_unit money not null,
+primary key(codigo)
+)
+
+create table pedido (
+num_pedido int not null,
+prazo_entrega int not null,
+codigo_c int not null,
+codigo_v int not null,
+primary key(num_pedido), 
+foreign key (codigo_c) references cliente,
+foreign key (codigo_v) references vendedor
+)
+
+create table item_do_pedido (
+num_pedido int not null,
+codigo_p int not null,
+quantidade int not null,
+primary key (num_pedido, codigo_p),
+foreign key (num_pedido) references pedido,
+foreign key (codigo_p) references produto
+)
+
+select * from cliente
+select * from vendedor
+select * from produto
+select * from pedido
+select * from item_do_pedido
+--------------------------------------------
+/* Inserção de dados: INSERT */
+
+insert into produto
+values (108, 'kg', 'parafuso', 1.25)
+
+select * from produto
+--------------------------------------------------
+
+insert into produto
+values (111, 'm', NULL, 1.50)
+
+select * from produto
+-------------------------------------
+insert into produto (codigo, unidade, val_unit)
+values (109, 'cm', 1.50)
+
+select * from produto
+------------------------------------------------------------
+/* Outra forma de inserir os dados especificando explicitamente o nome da colunas */
+
+insert into produto (codigo, descricao, unidade, val_unit)
+values (110, 'elástico', 'm', 2.00)
+
+select * from produto
+-----------------------------------------------------
+/* Inserindo vendedores */
+
+insert into vendedor 
+values (111, 'Carlos', 2490.00, 'A')
+
+insert into vendedor 
+values (130, 'Joana', 2780.00, 'C')
+
+insert into vendedor 
+values (209,'Jorge', 1800.00, 'C')
+
+select * from vendedor
+--------------------------------------------------------------------------------
+/* Cadastrando como clientes os vendedores cujo nome comece com a letra J */
+
+insert into cliente (codigo, nome)
+select codigo, nome
+from vendedor
+where nome like 'J%'
+--------------------------------------------------------------
+/* Alteração de dados: UPDATE */
+
+update produto
+set val_unit = 1.62
+where descricao = 'parafuso'
+
+select * from produto
+-----------------------------------------------------------------
+update vendedor
+set salario_fixo = (salario_fixo * 1.27)
+
+select * from vendedor
+--------------------------------------------------------------------
+update produto
+set val_unit = 2.00,
+    descricao = 'parafuso de aço'
+where codigo = 108
+
+select * from produto
+-----------------------------------------------------------------
+/* Exclusão de dados: DELETE */
+
+delete from vendedor
+where salario_fixo < 2500.00
+
+select * from vendedor
+--------------------------------------------------------
+delete from vendedor
+
+select * from vendedor
